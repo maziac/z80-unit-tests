@@ -2,6 +2,11 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent } from 'vscode-test-adapter-api';
 
+
+// Z80 Debugger extension.
+const z80DebugExtensionId = "maziac.z80-debug";
+
+
 const fakeTestSuite: TestSuiteInfo = {
 	type: 'suite',
 	id: 'root',
@@ -59,6 +64,26 @@ const fakeTestSuite: TestSuiteInfo = {
  * Retrieves the unit tests from the z80-debug extension.
  */
 export function loadTests(): Promise<TestSuiteInfo> {
+	const z80Debug = vscode.extensions.getExtension(z80DebugExtensionId);
+	if(!z80Debug) {
+		vscode.window.showErrorMessage("'" + z80DebugExtensionId + "' extension not found. Please install!");
+		return Promise.resolve<TestSuiteInfo>(fakeTestSuite);	// TODO 
+	}
+	if(z80Debug.isActive == false) {
+		z80Debug.activate().then(() => {
+				vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(labels => {
+					console.log(labels);
+				});
+			},
+			() => { vscode.window.showErrorMessage("'z80-debug' activation failed.");
+		});
+	}
+	else 
+	{
+		vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(labels => {
+			console.log(labels);
+		});
+	}
 	return Promise.resolve<TestSuiteInfo>(fakeTestSuite);
 }
 
@@ -77,7 +102,7 @@ export async function runTests(
 	const testCases = getTestCases(tests);
 
 	// Runs the testcases
-	runTestCases(testCases);
+	runTestCases(testCases, testStatesEmitter);
 }
 
 
@@ -159,13 +184,41 @@ function findNode(searchNode: TestSuiteInfo | TestInfo, id: string): TestSuiteIn
  * @param testStatesEmitter 
  */
 async function runTestCases(
-	node: TestSuiteInfo | TestInfo,
+	testCases: TestInfo[],
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
 ): Promise<void> {
+	// Event: Start the test cases
+	testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started'});
 
-	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: node.id, state: 'running' });
+	// Tell z80-debug what to test
+
+
+
+	if(false) {
+		// Loop over all testcases
+		for(const tc of testCases) {
+			//runTestCase(tc, testStatesEmitter);
+		}
+	}
+
+	// Event: Stop the test cases
+	testStatesEmitter.fire(<TestRunFinishedEvent>{ type: 'finished'});
+}
+
+
+/**
+ * Runs a single test case.
+ * @param testCase 
+ * @param testStatesEmitter 
+ */
+async function runTestCase(
+	testCase: TestInfo,
+	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestEvent>
+): Promise<void> {
+
+	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: testCase.id, state: 'running' });
 
 	// Run a single test case in the debugger
 
-	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: node.id, state: 'passed' });
+	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: testCase.id, state: 'passed' });
 }
