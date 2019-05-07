@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent } from 'vscode-test-adapter-api';
 
 
+
 // Z80 Debugger extension.
 const z80DebugExtensionId = "maziac.z80-debug";
 
@@ -59,32 +60,115 @@ const fakeTestSuite: TestSuiteInfo = {
 	]
 };
 
+/// The current testcases.
+let currentTestSuite: TestSuiteInfo;
+
+
 
 /**
  * Retrieves the unit tests from the z80-debug extension.
  */
 export function loadTests(): Promise<TestSuiteInfo> {
-	const z80Debug = vscode.extensions.getExtension(z80DebugExtensionId);
-	if(!z80Debug) {
-		vscode.window.showErrorMessage("'" + z80DebugExtensionId + "' extension not found. Please install!");
-		return Promise.resolve<TestSuiteInfo>(fakeTestSuite);	// TODO 
+	return new Promise<TestSuiteInfo>(resolve => {
+		// Function that converts the string labels in a test suite info.
+		const convert = (labels: string[]): TestSuiteInfo => {
+			const labelMap = new Map<string, any>();
+			for(const label of labels) {
+				// Split label in parts
+				const parts = label.split('.');
+				let map = labelMap;
+				// E.g. "ut_string" "UTT_byte_to_string"
+				for(const part of parts) {
+					// Check if entry exists
+					let nextMap = map.get(part);
+					// Check if already existent
+					if(!nextMap) {
+						// Create entry
+						nextMap = new Map<string, any>();
+						map.set(part, nextMap);
+					}
+					// Next
+					map = nextMap;
+				}
+			}
+			// Note: an entry with a map of length 0 is a leaf, i.e. a testcase. Others are test suites.
+			if(labelMap.size == 0) {
+				// Return an empty suite
+				return {
+					type: 'suite',
+					id: 'root',
+					label: 'Root',
+					children: []
+				};
+			}
+			// Convert map into suite
+			const testSuite = createTestSuite(labelMap) as TestSuiteInfo;
+			return testSuite;
+		};
+
+		const z80Debug = vscode.extensions.getExtension(z80DebugExtensionId);
+		if(!z80Debug) {
+			// Show error
+			vscode.window.showErrorMessage("'" + z80DebugExtensionId + "' extension not found. Please install!");
+			// Return empty test suite
+			resolve({type: 'suite', id: 'none', label: 'No tests', children: []}); 
+			return;
+		}
+		if(z80Debug.isActive == false) {
+			z80Debug.activate().then(() => {
+					vscode.commands.executeCommand('z80-debug.getAllUnitTests').then((retObj) => {
+						const labels = retObj as string[];
+						//console.log(labels);
+						currentTestSuite = convert(labels);
+						return resolve(currentTestSuite);
+					});
+				},
+				() => { vscode.window.showErrorMessage("'z80-debug' activation failed.");
+			});
+		}
+		else 
+		{
+			vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(labels => {
+				console.log(labels);
+				return resolve(fakeTestSuite);
+			});
+		}
+		
+	});
+
+}
+
+
+/**
+ * Create a testsuite object from the given map.
+ * Calls itself recursively.
+ * @param map A map of maps. An entry with a map of length 0 is a leaf, 
+ * i.e. a testcase. Others are test suites.
+ * @return The correspondent testsuite.
+ */
+function createTestSuite(map: Map<string,any>, name = 'Root', id = 'root'): TestSuiteInfo|TestInfo {
+	// Check if testsuite or testcase
+	if(map.size == 0) {
+		// It has no children, it is a leaf, i.e. a testcase
+		return {
+			type: 'test',
+			id: id,
+			label: name
+		};
 	}
-	if(z80Debug.isActive == false) {
-		z80Debug.activate().then(() => {
-				vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(labels => {
-					console.log(labels);
-				});
-			},
-			() => { vscode.window.showErrorMessage("'z80-debug' activation failed.");
-		});
+	
+	// It has children, i.e. it is a test suite
+	const children: Array<TestSuiteInfo|TestInfo> = [];
+	for(const [key, childMap] of map) {
+		const childSuite = createTestSuite(childMap, key, id+'.'+key);			
+		children.push(childSuite);
 	}
-	else 
-	{
-		vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(labels => {
-			console.log(labels);
-		});
-	}
-	return Promise.resolve<TestSuiteInfo>(fakeTestSuite);
+	return {
+		type: 'suite',
+		id: id,
+		label: name,
+		children: children
+	};
 }
 
 
@@ -116,12 +200,14 @@ function getTestCases(tests: string[]): TestInfo[] {
 	const testCases: TestInfo[] = [];
 
 	// Loop
-	for (const suiteOrTestId of tests) {
-		const node = findNode(fakeTestSuite, suiteOrTestId);
-		assert(node);
-		if(node) {
-			const tcs = getAllFromNode(node);
-			testCases.push(...tcs);
+	if(currentTestSuite) {
+		for (const suiteOrTestId of tests) {
+			const node = findNode(currentTestSuite, suiteOrTestId);
+			assert(node);
+			if(node) {
+				const tcs = getAllFromNode(node);
+				testCases.push(...tcs);
+			}
 		}
 	}
 
@@ -153,7 +239,7 @@ function getAllFromNode(node: TestSuiteInfo | TestInfo): TestInfo[] {
 		testCases.push(...childTestCases);
 	}
 
-	// return
+	// Return
 	return testCases;
 }
 
