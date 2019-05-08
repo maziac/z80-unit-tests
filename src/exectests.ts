@@ -7,7 +7,7 @@ import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, Tes
 // Z80 Debugger extension.
 const z80DebugExtensionId = "maziac.z80-debug";
 
-
+// TODO: REMOVE:
 const fakeTestSuite: TestSuiteInfo = {
 	type: 'suite',
 	id: 'root',
@@ -70,42 +70,6 @@ let currentTestSuite: TestSuiteInfo;
  */
 export function loadTests(): Promise<TestSuiteInfo> {
 	return new Promise<TestSuiteInfo>(resolve => {
-		// Function that converts the string labels in a test suite info.
-		const convert = (labels: string[]): TestSuiteInfo => {
-			const labelMap = new Map<string, any>();
-			for(const label of labels) {
-				// Split label in parts
-				const parts = label.split('.');
-				let map = labelMap;
-				// E.g. "ut_string" "UTT_byte_to_string"
-				for(const part of parts) {
-					// Check if entry exists
-					let nextMap = map.get(part);
-					// Check if already existent
-					if(!nextMap) {
-						// Create entry
-						nextMap = new Map<string, any>();
-						map.set(part, nextMap);
-					}
-					// Next
-					map = nextMap;
-				}
-			}
-			// Note: an entry with a map of length 0 is a leaf, i.e. a testcase. Others are test suites.
-			if(labelMap.size == 0) {
-				// Return an empty suite
-				return {
-					type: 'suite',
-					id: 'root',
-					label: 'Root',
-					children: []
-				};
-			}
-			// Convert map into suite
-			const testSuite = createTestSuite(labelMap) as TestSuiteInfo;
-			return testSuite;
-		};
-
 		const z80Debug = vscode.extensions.getExtension(z80DebugExtensionId);
 		if(!z80Debug) {
 			// Show error
@@ -116,26 +80,74 @@ export function loadTests(): Promise<TestSuiteInfo> {
 		}
 		if(z80Debug.isActive == false) {
 			z80Debug.activate().then(() => {
-					vscode.commands.executeCommand('z80-debug.getAllUnitTests').then((retObj) => {
-						const labels = retObj as string[];
-						//console.log(labels);
-						currentTestSuite = convert(labels);
-						return resolve(currentTestSuite);
+				getAllUnitTests().then(testSuite => {
+						return resolve(testSuite);
 					});
 				},
 				() => { vscode.window.showErrorMessage("'z80-debug' activation failed.");
 			});
 		}
-		else 
-		{
-			vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(labels => {
-				console.log(labels);
-				return resolve(fakeTestSuite);
+		else {
+			getAllUnitTests().then(testSuite => {
+				return resolve(testSuite);
 			});
-		}
-		
+		}		
 	});
+}
 
+
+/**
+ * Function that converts the string labels in a test suite info.
+ */
+function convertLabelsToTestSuite(labels: string[]): TestSuiteInfo {
+	const labelMap = new Map<string, any>();
+	for(const label of labels) {
+		// Split label in parts
+		const parts = label.split('.');
+		let map = labelMap;
+		// E.g. "ut_string" "UTT_byte_to_string"
+		for(const part of parts) {
+			// Check if entry exists
+			let nextMap = map.get(part);
+			// Check if already existent
+			if(!nextMap) {
+				// Create entry
+				nextMap = new Map<string, any>();
+				map.set(part, nextMap);
+			}
+			// Next
+			map = nextMap;
+		}
+	}
+	// Note: an entry with a map of length 0 is a leaf, i.e. a testcase. Others are test suites.
+	if(labelMap.size == 0) {
+		// Return an empty suite
+		return {
+			type: 'suite',
+			id: 'root',
+			label: 'Root',
+			children: []
+		};
+	}
+	// Convert map into suite
+	const testSuite = createTestSuite(labelMap) as TestSuiteInfo;
+	return testSuite;
+}
+
+
+/**
+ * Executes 'z80-debug.getAllUnitTests' in the z80-debug-adapter and then
+ * evaluates the returned testcase labels.
+ */
+function getAllUnitTests(): Promise<TestSuiteInfo> {
+	return new Promise<TestSuiteInfo>(resolve => {
+		vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(retObj => {
+			const labels = retObj as string[];
+			//console.log(labels);
+			currentTestSuite = convertLabelsToTestSuite(labels);
+			return resolve(currentTestSuite);
+		});
+	});
 }
 
 
@@ -278,8 +290,11 @@ async function runTestCases(
 
 	// Tell z80-debug what to test
 
-
-
+	/*
+Hier muss getestet werden , vorher aber :
+- load Tests für alle if-else 
+- Nach dem Laden der Tests aus z80-debug scheint z80-debug nicht aus dem Debug mode raus zu getDiffieHellman.
+*/
 	if(false) {
 		// Loop over all testcases
 		for(const tc of testCases) {
