@@ -39,7 +39,7 @@ export class ExampleAdapter implements TestAdapter {
 		this.testsEmitter.fire(<TestLoadStartedEvent>{ type: 'started' });
 
 		const loadedTests = await loadTests();
-
+		
 		this.testsEmitter.fire(<TestLoadFinishedEvent>{ type: 'finished', suite: loadedTests });
 
 	}

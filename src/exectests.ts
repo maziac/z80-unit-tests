@@ -7,7 +7,19 @@ import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, Tes
 // Z80 Debugger extension.
 const z80DebugExtensionId = "maziac.z80-debug";
 
-// TODO: REMOVE:
+// An empty testsuite.
+const emptyTestSuite: TestSuiteInfo = {
+	type: 'suite',
+	id: 'root',
+	label: 'Root',
+	children: []
+};
+
+/// The current testcases.
+let currentTestSuite: TestSuiteInfo;
+
+
+/* Example test suite:
 const fakeTestSuite: TestSuiteInfo = {
 	type: 'suite',
 	id: 'root',
@@ -59,9 +71,7 @@ const fakeTestSuite: TestSuiteInfo = {
 		}
 	]
 };
-
-/// The current testcases.
-let currentTestSuite: TestSuiteInfo;
+*/
 
 
 
@@ -79,17 +89,24 @@ export function loadTests(): Promise<TestSuiteInfo> {
 			return;
 		}
 		if(z80Debug.isActive == false) {
-			z80Debug.activate().then(() => {
-				getAllUnitTests().then(testSuite => {
-						return resolve(testSuite);
+			z80Debug.activate().then(
+				// Fullfilled:
+				() => {
+					getAllUnitTests().then((testSuite) => {
+						resolve(testSuite);
 					});
 				},
-				() => { vscode.window.showErrorMessage("'z80-debug' activation failed.");
-			});
+				// Reject:
+				() => { 
+					vscode.window.showErrorMessage("'z80-debug' activation failed.");
+					currentTestSuite = emptyTestSuite;
+					return resolve(currentTestSuite);
+				}
+			);
 		}
 		else {
-			getAllUnitTests().then(testSuite => {
-				return resolve(testSuite);
+			getAllUnitTests().then((testSuite) => {
+				resolve(testSuite);
 			});
 		}		
 	});
@@ -138,15 +155,29 @@ function convertLabelsToTestSuite(labels: string[]): TestSuiteInfo {
 /**
  * Executes 'z80-debug.getAllUnitTests' in the z80-debug-adapter and then
  * evaluates the returned testcase labels.
+ * @returns A test suite or (reject) an error text.
  */
 function getAllUnitTests(): Promise<TestSuiteInfo> {
-	return new Promise<TestSuiteInfo>(resolve => {
-		vscode.commands.executeCommand('z80-debug.getAllUnitTests').then(retObj => {
-			const labels = retObj as string[];
-			//console.log(labels);
-			currentTestSuite = convertLabelsToTestSuite(labels);
-			return resolve(currentTestSuite);
-		});
+	return new Promise <TestSuiteInfo>(resolve => {
+		vscode.commands.executeCommand('z80-debug.getAllUnitTests')
+		.then(
+			// Fullfilled
+			result => {
+				// Everything fine.
+				const utLabels = result as string[];
+				currentTestSuite = convertLabelsToTestSuite(utLabels);
+				return resolve(currentTestSuite);			
+			},
+			// Rejected
+			result => {
+				// Error
+				const errorText = result as string;
+				vscode.window.showErrorMessage(errorText);
+				// Return empty list
+				currentTestSuite = emptyTestSuite;
+				return resolve(currentTestSuite);
+			}
+		);
 	});
 }
 
