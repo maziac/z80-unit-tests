@@ -7,6 +7,17 @@ import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, Tes
 // Z80 Debugger extension.
 const z80DebugExtensionId = "maziac.z80-debug";
 
+/**
+ * Enumeration for the returned test case pass or failure.
+ */
+enum TestCaseResult {
+	OK = 0,
+	FAILED = 1,
+	TIMEOUT = 2,
+	CANCELLED = 3,	// Testcases have been cancelled, e.g. manually or the connection might have been lost or whatever.
+}
+
+
 // An empty testsuite.
 const emptyTestSuite: TestSuiteInfo = {
 	type: 'suite',
@@ -189,7 +200,7 @@ function getAllUnitTests(): Promise<TestSuiteInfo> {
  * i.e. a testcase. Others are test suites.
  * @return The correspondent testsuite.
  */
-function createTestSuite(map: Map<string,any>, name = 'Root', id = 'root'): TestSuiteInfo|TestInfo {
+function createTestSuite(map: Map<string,any>, name = 'Root', id = ''): TestSuiteInfo|TestInfo {
 	// Check if testsuite or testcase
 	if(map.size == 0) {
 		// It has no children, it is a leaf, i.e. a testcase
@@ -203,7 +214,8 @@ function createTestSuite(map: Map<string,any>, name = 'Root', id = 'root'): Test
 	// It has children, i.e. it is a test suite
 	const children: Array<TestSuiteInfo|TestInfo> = [];
 	for(const [key, childMap] of map) {
-		const childSuite = createTestSuite(childMap, key, id+'.'+key);			
+		const totalKey = (id == '')? key : id+'.'+key;
+		const childSuite = createTestSuite(childMap, key, totalKey);			
 		children.push(childSuite);
 	}
 	return {
@@ -217,10 +229,12 @@ function createTestSuite(map: Map<string,any>, name = 'Root', id = 'root'): Test
 
 /**
  * Runs one or more test cases.
- * @param tests 
+ * @param debug true if debugger should be started in debug mode.
+ * @param node 
  * @param testStatesEmitter 
  */
 export async function runTests(
+	debug: boolean,
 	tests: string[],
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
 ): Promise<void> {
@@ -229,7 +243,7 @@ export async function runTests(
 	const testCases = getTestCases(tests);
 
 	// Runs the testcases
-	runTestCases(testCases, testStatesEmitter);
+	runTestCases(debug, testCases, testStatesEmitter);
 }
 
 
@@ -309,32 +323,58 @@ function findNode(searchNode: TestSuiteInfo | TestInfo, id: string): TestSuiteIn
 
 /**
  * Runs the testcases.
+ * @param debug true if debugger should be started in debug mode.
  * @param node 
  * @param testStatesEmitter 
  */
-async function runTestCases(
+async function runTestCases(debug: boolean,
 	testCases: TestInfo[],
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
 ): Promise<void> {
 	// Event: Start the test cases
 	testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started'});
 
-	// Tell z80-debug what to test
+	// Tell z80-debug to clear current tests
+	vscode.commands.executeCommand('z80-debug.initUnitTests');
 
-	/*
-Hier muss getestet werden , vorher aber :
-- load Tests für alle if-else 
-- Nach dem Laden der Tests aus z80-debug scheint z80-debug nicht aus dem Debug mode raus zu getDiffieHellman.
-*/
-	if(false) {
-		// Loop over all testcases
-		for(const tc of testCases) {
-			//runTestCase(tc, testStatesEmitter);
-		}
+	// Loop over all testcases and emit that test case started
+	let tcCount = 0;
+	for(const tc of testCases) {
+		const tcLabel: string = tc.id;
+		testStatesEmitter.fire(<TestEvent>{ type: 'test', test: tcLabel, state: 'running' });
+		// Tell z80-debug what to test
+		tcCount ++;
+		vscode.commands.executeCommand('z80-debug.execUnitTestCase', tcLabel)
+		.then(testCaseResult => {
+			// Return the ersult
+			let tcResultStr = "errored";
+			let message;
+			switch(testCaseResult) {
+				case TestCaseResult.OK: 
+					tcResultStr = "passed";
+					break;
+				case TestCaseResult.TIMEOUT:
+					message = 'Timed out!';
+					// Flow through
+				case TestCaseResult.FAILED: 
+					tcResultStr = "failed";
+					break;
+			}
+			testStatesEmitter.fire(<TestEvent>{type: 'test', test: tcLabel, state: tcResultStr, message: message});
+			// Check if last test case run
+			tcCount --;
+			if(tcCount == 0) {
+				// Event: Stop the test cases
+				testStatesEmitter.fire(<TestRunFinishedEvent>{type: 'finished'});
+			}
+		});
 	}
 
-	// Event: Stop the test cases
-	testStatesEmitter.fire(<TestRunFinishedEvent>{ type: 'finished'});
+	// Start the unit tests
+	if(debug)
+		vscode.commands.executeCommand('z80-debug.debugPartialUnitTests');
+	else
+		vscode.commands.executeCommand('z80-debug.runPartialUnitTests');
 }
 
 
@@ -343,6 +383,7 @@ Hier muss getestet werden , vorher aber :
  * @param testCase 
  * @param testStatesEmitter 
  */
+/*
 async function runTestCase(
 	testCase: TestInfo,
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestEvent>
@@ -354,3 +395,4 @@ async function runTestCase(
 
 	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: testCase.id, state: 'passed' });
 }
+*/
