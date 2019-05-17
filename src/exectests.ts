@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent } from 'vscode-test-adapter-api';
+import { stringify } from 'querystring';
 
 
 
@@ -15,6 +16,16 @@ enum TestCaseResult {
 	FAILED = 1,
 	TIMEOUT = 2,
 	CANCELLED = 3,	// Testcases have been cancelled, e.g. manually or the connection might have been lost or whatever.
+}
+
+
+/**
+ * This structure is returned by getAllUnitTests.
+ */
+export interface UnitTestCase {
+	label: string;	// The full label of the test case, e.g. "test.UT_test1"
+	file: string;	// The full path of the file
+	line: number;	// The line number of the label
 }
 
 
@@ -127,10 +138,10 @@ export function loadTests(): Promise<TestSuiteInfo> {
 /**
  * Function that converts the string labels in a test suite info.
  */
-function convertLabelsToTestSuite(labels: string[]): TestSuiteInfo {
+function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo {
+	const labels = lblLocations.map(lblLoc => lblLoc.label);
 	const labelMap = new Map<string, any>();
 	for(const label of labels) {
-		// Split label in parts
 		const parts = label.split('.');
 		let map = labelMap;
 		// E.g. "ut_string" "UTT_byte_to_string"
@@ -159,6 +170,12 @@ function convertLabelsToTestSuite(labels: string[]): TestSuiteInfo {
 	}
 	// Convert map into suite
 	const testSuite = createTestSuite(labelMap) as TestSuiteInfo;
+	// Assign files and line numbers
+	const fileLinesMap = new Map<string, {file: string, line:number}>();
+	lblLocations.map(lblLoc => {
+		fileLinesMap.set(lblLoc.label, {file: lblLoc.file, line: lblLoc.line});
+	});
+	assignFilesAndLines(testSuite, fileLinesMap);
 	return testSuite;
 }
 
@@ -175,8 +192,8 @@ function getAllUnitTests(): Promise<TestSuiteInfo> {
 			// Fullfilled
 			result => {
 				// Everything fine.
-				const utLabels = result as string[];
-				currentTestSuite = convertLabelsToTestSuite(utLabels);
+				const lblLocations = result as UnitTestCase[];
+				currentTestSuite = convertLabelsToTestSuite(lblLocations);
 				return resolve(currentTestSuite);			
 			},
 			// Rejected
@@ -225,6 +242,30 @@ function createTestSuite(map: Map<string,any>, name = 'Root', id = ''): TestSuit
 		children: children
 	};
 }
+
+
+/**
+ * Assigns files and line numbers to the testSuite.
+ * Calls itself recursively.
+ * @param testSuite The complete test suite with label names.
+ * @param fileLinesMap A map with the label as key and the filename and line number as value.
+ */
+function assignFilesAndLines(testSuite: TestSuiteInfo|TestInfo, fileLinesMap: Map<string, {file: string, line:number}>) {
+	const label = testSuite.id;
+	const location = fileLinesMap.get(label);
+	if(location) {
+		// Set filename and line number
+		testSuite.file = location.file;
+		testSuite.line = location.line;
+	}
+	// Dive into children
+	const children = (testSuite as any).children;
+	if(children) {
+		for(const child of children)
+			assignFilesAndLines(child, fileLinesMap);
+	}
+}
+
 
 
 /**
