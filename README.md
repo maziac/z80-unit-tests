@@ -8,7 +8,54 @@ The adapter is just a mediator, it requires other extensions
 - [Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer) 
 
 
-## Acknowledgements
+## Gallery
+
+![](documentation/images/gallery_unittest.gif)
+
+![](documentation/images/gallery_unittest_fail.gif)
+
+
+# Howto
+
+An explanation how to prepare your assembler sources to use unit tests can be found here.
+
+TODO:
+[Z80 Unit Tests](https://github.com/maziac/z80-debug/...)
+
+If this is working (i.e. you can execute Z80 unit tests from the command palette) then this extension should run out-of-the box:
+
+1. Enter the testing area:
+![](documentation/images/gallery_ut0.jpg)
+
+2. Refresh (retrieve addresses of the unit test cases):
+![](documentation/images/gallery_ut1.jpg)
+
+3. Navigate to the unit test you want to execute:
+![](documentation/images/gallery_ut2.jpg)
+
+4. Hover over it and select Debug, Run or Goto:
+![](documentation/images/gallery_ut3.jpg)
+
+5. Run a single unit test. A successful unit test execution will be indicated by a green arrow:
+![](documentation/images/gallery_ut4.jpg)
+
+6. Execute all unit tests:
+![](documentation/images/gallery_ut5.jpg)
+
+7. A failed testcase is indicated by a red icon:
+![](documentation/images/gallery_ut6.jpg)
+
+8. Jump to it:
+![](documentation/images/gallery_ut7.jpg)
+
+9. See where it failed:
+![](documentation/images/gallery_ut8.jpg)
+In this case register 'a' was tested for the number 1 ("TEST_A 1") but obviously it was 0.
+The testcase failed and stopped here.
+Please note that the code coverage indicated by the green background also stops here because the lines after the failure where not executed anymore.
+
+
+# Acknowledgements
 
 This extension is based on the examples sources [vscode-example-test-adapter](https://github.com/hbenl/vscode-example-test-adapter) by Holger Benl
 

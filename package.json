@@ -37,13 +37,13 @@
     "publish": "vsce publish"
   },
   "dependencies": {
+    "@types/assert": "^1.4.2",
     "tslib": "^1.9.3",
     "vscode-test-adapter-api": "^1.3.0",
     "vscode-test-adapter-util": "^0.6.3"
   },
   "devDependencies": {
     "typescript": "^3.3.3",
-    "vsce": "^1.57.0",
     "vscode": "^1.1.33"
   },
   "engines": {
