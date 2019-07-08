@@ -28,72 +28,9 @@ export interface UnitTestCase {
 }
 
 
-// An empty testsuite.
-const emptyTestSuite: TestSuiteInfo = {
-	type: 'suite',
-	id: 'root',
-	label: 'Root',
-	children: []
-};
 
 /// The current testcases.
-let currentTestSuite: TestSuiteInfo;
-
-
-/* Example test suite:
-const fakeTestSuite: TestSuiteInfo = {
-	type: 'suite',
-	id: 'root',
-	label: 'Fake', // the label of the root node should be the name of the testing framework
-	children: [
-		{
-			type: 'suite',
-			id: 'nested',
-			label: 'Nested suite',
-			children: [
-				{
-					type: 'test',
-					id: 'test1',
-					label: 'Test #1'
-				},
-				{
-					type: 'test',
-					id: 'test2',
-					label: 'Test #2'
-				}
-			]
-		},
-		{
-			type: 'suite',
-			id: 'nested2',
-			label: 'Meine Nested suite',
-			children: [
-				{
-					type: 'test',
-					id: 'test21',
-					label: 'Test #1'
-				},
-				{
-					type: 'test',
-					id: 'test22',
-					label: 'Test #2'
-				}
-			]
-		},
-		{
-			type: 'test',
-			id: 'test3',
-			label: 'Test #3'
-		},
-		{
-			type: 'test',
-			id: 'test4',
-			label: 'Test #4'
-		}
-	]
-};
-*/
-
+let currentTestSuite: TestSuiteInfo|undefined;
 
 
 /**
@@ -120,7 +57,7 @@ export function loadTests(): Promise<TestSuiteInfo> {
 				// Reject:
 				() => { 
 					vscode.window.showErrorMessage("'z80-debug' activation failed.");
-					currentTestSuite = emptyTestSuite;
+					currentTestSuite = undefined;
 					return resolve(currentTestSuite);
 				}
 			);
@@ -137,7 +74,7 @@ export function loadTests(): Promise<TestSuiteInfo> {
 /**
  * Function that converts the string labels in a test suite info.
  */
-function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo {
+function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo|undefined {
 	const labels = lblLocations.map(lblLoc => lblLoc.label);
 	const labelMap = new Map<string, any>();
 	for(const label of labels) {
@@ -160,12 +97,7 @@ function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo {
 	// Note: an entry with a map of length 0 is a leaf, i.e. a testcase. Others are test suites.
 	if(labelMap.size == 0) {
 		// Return an empty suite
-		return {
-			type: 'suite',
-			id: 'root',
-			label: 'Root',
-			children: []
-		};
+		return undefined;
 	}
 	// Convert map into suite
 	const testSuite = createTestSuite(labelMap) as TestSuiteInfo;
@@ -201,7 +133,7 @@ function getAllUnitTests(): Promise<TestSuiteInfo> {
 				const errorText = result as string;
 				vscode.window.showErrorMessage(errorText);
 				// Return empty list
-				currentTestSuite = emptyTestSuite;
+				currentTestSuite = undefined;
 				return resolve(currentTestSuite);
 			}
 		);
@@ -216,7 +148,7 @@ function getAllUnitTests(): Promise<TestSuiteInfo> {
  * i.e. a testcase. Others are test suites.
  * @return The correspondent testsuite.
  */
-function createTestSuite(map: Map<string,any>, name = 'Root', id = ''): TestSuiteInfo|TestInfo {
+function createTestSuite(map: Map<string,any>, name = 'z80-unit-tests', id = ''): TestSuiteInfo|TestInfo {
 	// Check if testsuite or testcase
 	if(map.size == 0) {
 		// It has no children, it is a leaf, i.e. a testcase
