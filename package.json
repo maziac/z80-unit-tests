@@ -7,7 +7,7 @@
   "author": {
     "name": "Thomas Busse"
   },
-  "version": "0.2.1",
+  "version": "0.3.0",
   "license": "MIT",
   "homepage": "https://github.com/maziac/z80-unit-tests",
   "repository": {
@@ -58,14 +58,14 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "Example Test Explorer configuration",
+      "title": "Z80 Unit Test Explorer configuration",
       "properties": {
-        "exampleExplorer.logpanel": {
+        "z80UnitTestExplorer.logpanel": {
           "description": "write diagnostic logs to an output panel",
           "type": "boolean",
           "scope": "resource"
         },
-        "exampleExplorer.logfile": {
+        "z80UnitTestExplorer.logfile": {
           "description": "write diagnostic logs to the given file",
           "type": "string",
           "scope": "resource"

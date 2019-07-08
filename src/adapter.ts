@@ -3,11 +3,11 @@ import { TestAdapter, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStarte
 import { Log } from 'vscode-test-adapter-util';
 import { loadTests, runTests } from './exectests';
 
+
 /**
- * This class is intended as a starting point for implementing a "real" TestAdapter.
- * The file `README.md` contains further instructions.
+ * Implementation of the Z80 Unit Test Adapter.
  */
-export class ExampleAdapter implements TestAdapter {
+export class Z80UnitTestAdapter implements TestAdapter {
 
 	private disposables: { dispose(): void }[] = [];
 
@@ -24,7 +24,7 @@ export class ExampleAdapter implements TestAdapter {
 		private readonly log: Log
 	) {
 
-		this.log.info('Initializing example adapter');
+		this.log.info('Initializing Z80 Unit Test Adapter');
 
 		this.disposables.push(this.testsEmitter);
 		this.disposables.push(this.testStatesEmitter);
@@ -34,14 +34,25 @@ export class ExampleAdapter implements TestAdapter {
 
 	async load(): Promise<void> {
 
-		this.log.info('Loading example tests');
+		this.log.info('Loading unit tests');
 
 		this.testsEmitter.fire(<TestLoadStartedEvent>{ type: 'started' });
 
-		const loadedTests = await loadTests();
+		let loadedTests;
+		try {
+			loadedTests = await loadTests();
+			if(loadedTests)
+				this.log.info('Unit tests found');
+			else 
+				this.log.info('No tests found');
+		}
+		catch(e) {
+			this.log.warn(e);
+		}
 		
 		this.testsEmitter.fire(<TestLoadFinishedEvent>{ type: 'finished', suite: loadedTests });
-
+		
+		this.log.info('Loading finished');
 	}
 
 	async run(tests: string[]): Promise<void> {

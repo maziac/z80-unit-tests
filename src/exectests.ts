@@ -37,35 +37,47 @@ let currentTestSuite: TestSuiteInfo|undefined;
  * Retrieves the unit tests from the z80-debug extension.
  */
 export function loadTests(): Promise<TestSuiteInfo> {
-	return new Promise<TestSuiteInfo>(resolve => {
+	return new Promise<TestSuiteInfo>((resolve, reject) => {
 		const z80Debug = vscode.extensions.getExtension(z80DebugExtensionId);
 		if(!z80Debug) {
-			// Show error
-			vscode.window.showErrorMessage("'" + z80DebugExtensionId + "' extension not found. Please install!");
-			// Return empty test suite
-			resolve({type: 'suite', id: 'none', label: 'No tests', children: []}); 
-			return;
+			// Return error
+			currentTestSuite = undefined;
+			const txt = "'" + z80DebugExtensionId + "' extension not found. Please install!";
+			return reject(txt); 
 		}
 		if(z80Debug.isActive == false) {
 			z80Debug.activate().then(
 				// Fullfilled:
 				() => {
-					getAllUnitTests().then((testSuite) => {
-						resolve(testSuite);
-					});
+					getAllUnitTests().then(
+						// Resolve
+						testSuite => {
+							resolve(testSuite);
+						},
+						// Reject
+						errorText => {
+							reject(errorText);
+						});
 				},
 				// Reject:
 				() => { 
-					vscode.window.showErrorMessage("'z80-debug' activation failed.");
 					currentTestSuite = undefined;
-					return resolve(currentTestSuite);
+					// Return error
+					const txt = "'z80-debug' activation failed.";
+					reject(txt); 
 				}
 			);
 		}
 		else {
-			getAllUnitTests().then((testSuite) => {
-				resolve(testSuite);
-			});
+			getAllUnitTests().then(
+				// Resolve
+				testSuite => {
+					resolve(testSuite);
+				},
+				// Reject
+				errorText => {
+					reject(errorText);
+				});
 		}		
 	});
 }
@@ -117,7 +129,7 @@ function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo|u
  * @returns A test suite or (reject) an error text.
  */
 function getAllUnitTests(): Promise<TestSuiteInfo> {
-	return new Promise <TestSuiteInfo>(resolve => {
+	return new Promise <TestSuiteInfo>((resolve, reject) => {
 		vscode.commands.executeCommand('z80-debug.getAllUnitTests')
 		.then(
 			// Fullfilled
@@ -131,10 +143,10 @@ function getAllUnitTests(): Promise<TestSuiteInfo> {
 			result => {
 				// Error
 				const errorText = result as string;
-				vscode.window.showErrorMessage(errorText);
 				// Return empty list
 				currentTestSuite = undefined;
-				return resolve(currentTestSuite);
+				// Return error
+				return reject(errorText); 
 			}
 		);
 	});

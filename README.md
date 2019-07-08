@@ -65,6 +65,11 @@ The testcase failed and stopped here.
 Please note that the code coverage indicated by the green background also stops here because the lines after the failure where not executed anymore.
 
 
+# Log
+
+There is a log available. If something does not work take a look there.
+
+
 # What Else
 
 You can have a look at the [z80-sample-program](https://github.com/maziac/z80-sample-program).

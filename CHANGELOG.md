@@ -1,8 +1,11 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 - Fixed a bug that in case no test cases are found then no test suite is displayed.
 - The test suite root name was changed.
+- Clean up of example code.
+- Added logs instead of error messages.
+
 
 ## 0.2.0
 - First working version.
