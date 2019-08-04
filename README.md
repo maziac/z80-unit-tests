@@ -60,7 +60,7 @@ If this is working (i.e. you can execute Z80 unit tests from the command palette
 
 In this case register 'a' was tested for the number 1 ("TEST_A 1") but obviously it was 0.
 The testcase failed and stopped here.
-Please note that the code coverage indicated by the green background also stops here because the lines after the failure where not executed anymore.
+Please note that the code coverage indicated by the green background also stops here because the lines after the failure were not executed anymore.
 
 
 # Log
