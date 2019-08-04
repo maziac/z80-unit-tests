@@ -7,7 +7,7 @@
   "author": {
     "name": "Thomas Busse"
   },
-  "version": "0.3.1",
+  "version": "0.3.2",
   "license": "MIT",
   "homepage": "https://github.com/maziac/z80-unit-tests",
   "repository": {
@@ -50,7 +50,8 @@
     "vscode": "^1.23.0"
   },
   "extensionDependencies": [
-    "hbenl.vscode-test-explorer"
+    "hbenl.vscode-test-explorer",
+    "maziac.z80-debug"
   ],
   "activationEvents": [
     "*"

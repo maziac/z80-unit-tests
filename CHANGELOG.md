@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2
+- Dependencies updated.
+
 ## 0.3.1
 - New icon added.
 - Minor text update.
