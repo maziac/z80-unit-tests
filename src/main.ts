@@ -7,8 +7,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const workspaceFolder = (vscode.workspace.workspaceFolders || [])[0];
 
-	// create a simple logger that can be configured with the configuration variables
-	// `exampleExplorer.logpanel` and `exampleExplorer.logfile`
+	// Create a simple logger that can be configured with the configuration variables
+	// `z80UnitTestExplorer.logpanel` and `z80UnitTestExplorer.logfile`
 	const log = new Log('z80UnitTestExplorer', workspaceFolder, 'Z80 Unit Test Explorer Log');
 	context.subscriptions.push(log);
 
