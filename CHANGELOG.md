@@ -1,11 +1,17 @@
 # Changelog
 
+## 1.0.0
+- Dependencies changed from z80-debug to dezog.
+
+
 ## 0.3.2
 - Dependencies updated.
+
 
 ## 0.3.1
 - New icon added.
 - Minor text update.
+
 
 ## 0.3.0
 - Fixed a bug that in case no test cases are found then no test suite is displayed.

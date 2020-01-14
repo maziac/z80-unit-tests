@@ -5,7 +5,7 @@ import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, Tes
 
 
 // Z80 Debugger extension.
-const z80DebugExtensionId = "maziac.z80-debug";
+const z80DebugExtensionId = "maziac.dezog";
 
 /**
  * Enumeration for the returned test case pass or failure.
@@ -34,7 +34,7 @@ let currentTestSuite: TestSuiteInfo|undefined;
 
 
 /**
- * Retrieves the unit tests from the z80-debug extension.
+ * Retrieves the unit tests from the dezog extension.
  */
 export function loadTests(): Promise<TestSuiteInfo> {
 	return new Promise<TestSuiteInfo>((resolve, reject) => {
@@ -63,7 +63,7 @@ export function loadTests(): Promise<TestSuiteInfo> {
 				() => { 
 					currentTestSuite = undefined;
 					// Return error
-					const txt = "'z80-debug' activation failed.";
+					const txt = "'DeZog' activation failed.";
 					reject(txt); 
 				}
 			);
@@ -124,13 +124,13 @@ function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo|u
 
 
 /**
- * Executes 'z80-debug.getAllUnitTests' in the z80-debug-adapter and then
+ * Executes 'dezog.getAllUnitTests' in DeZog and then
  * evaluates the returned testcase labels.
  * @returns A test suite or (reject) an error text.
  */
 function getAllUnitTests(): Promise<TestSuiteInfo> {
 	return new Promise <TestSuiteInfo>((resolve, reject) => {
-		vscode.commands.executeCommand('z80-debug.getAllUnitTests')
+		vscode.commands.executeCommand('dezog.getAllUnitTests')
 		.then(
 			// Fullfilled
 			result => {
@@ -318,17 +318,17 @@ async function runTestCases(debug: boolean,
 	// Event: Start the test cases
 	testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started'});
 
-	// Tell z80-debug to clear current tests
-	vscode.commands.executeCommand('z80-debug.initUnitTests');
+	// Tell dezog to clear current tests
+	vscode.commands.executeCommand('dezog.initUnitTests');
 
 	// Loop over all testcases and emit that test case started
 	let tcCount = 0;
 	for(const tc of testCases) {
 		const tcLabel: string = tc.id;
 		testStatesEmitter.fire(<TestEvent>{ type: 'test', test: tcLabel, state: 'running' });
-		// Tell z80-debug what to test
+		// Tell dezog what to test
 		tcCount ++;
-		vscode.commands.executeCommand('z80-debug.execUnitTestCase', tcLabel)
+		vscode.commands.executeCommand('dezog.execUnitTestCase', tcLabel)
 		.then(testCaseResult => {
 			// Return the ersult
 			let tcResultStr = "errored";
@@ -356,9 +356,9 @@ async function runTestCases(debug: boolean,
 
 	// Start the unit tests
 	if(debug)
-		vscode.commands.executeCommand('z80-debug.debugPartialUnitTests');
+		vscode.commands.executeCommand('dezog.debugPartialUnitTests');
 	else
-		vscode.commands.executeCommand('z80-debug.runPartialUnitTests');
+		vscode.commands.executeCommand('dezog.runPartialUnitTests');
 }
 
 

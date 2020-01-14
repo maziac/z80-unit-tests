@@ -7,7 +7,7 @@
   "author": {
     "name": "Thomas Busse"
   },
-  "version": "0.3.2",
+  "version": "1.0.0",
   "license": "MIT",
   "homepage": "https://github.com/maziac/z80-unit-tests",
   "repository": {
@@ -37,21 +37,21 @@
     "publish": "vsce publish"
   },
   "dependencies": {
-    "@types/assert": "^1.4.2",
+    "@types/assert": "^1.4.3",
     "tslib": "^1.10.0",
     "vscode-test-adapter-api": "^1.7.0",
     "vscode-test-adapter-util": "^0.7.0"
   },
   "devDependencies": {
-    "typescript": "^3.5.2",
-    "vscode": "^1.1.35"
+    "typescript": "^3.7.4",
+    "vscode": "^1.1.36"
   },
   "engines": {
-    "vscode": "^1.23.0"
+    "vscode": "^1.35.1"
   },
   "extensionDependencies": [
     "hbenl.vscode-test-explorer",
-    "maziac.z80-debug"
+    "maziac.dezog"
   ],
   "activationEvents": [
     "*"

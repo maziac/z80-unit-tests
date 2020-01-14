@@ -4,7 +4,7 @@ This is a unit test adapter for the Z80 assembler language.
 It allows to run unit tests very comfortable from the vscode UI.
 
 The adapter is just a mediator, it requires other extensions
-- [Z80 Debugger](https://github.com/maziac/z80-debug)
+- [DeZog (Z80 Debugger)](https://github.com/maziac/dezog)
 - [Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer) 
 
 
@@ -17,7 +17,7 @@ The adapter is just a mediator, it requires other extensions
 
 # Howto
 
-An explanation how to prepare your assembler sources to use unit tests can be found [here](https://github.com/maziac/z80-debug/blob/master/documentation/UnitTests.md).
+An explanation how to prepare your assembler sources to use unit tests can be found [here](https://github.com/maziac/dezog/blob/master/documentation/UnitTests.md).
 Note: You can also load a sample program with unit test setup from here: [z80-sample-program](https://github.com/maziac/z80-sample-program).
 
 If this is working (i.e. you can execute Z80 unit tests from the command palette) then the z80-unit-tests extension should run out-of-the box:
