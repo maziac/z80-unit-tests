@@ -316,7 +316,8 @@ async function runTestCases(debug: boolean,
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
 ): Promise<void> {
 	// Event: Start the test cases
-	testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started'});
+	const tcLabels=testCases.map(tc => tc.id);
+	testStatesEmitter.fire(<TestRunStartedEvent>{type: 'started', tests: tcLabels});
 
 	// Tell dezog to clear current tests
 	vscode.commands.executeCommand('dezog.initUnitTests');
@@ -361,22 +362,3 @@ async function runTestCases(debug: boolean,
 		vscode.commands.executeCommand('dezog.runPartialUnitTests');
 }
 
-
-/**
- * Runs a single test case.
- * @param testCase 
- * @param testStatesEmitter 
- */
-/*
-async function runTestCase(
-	testCase: TestInfo,
-	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestEvent>
-): Promise<void> {
-
-	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: testCase.id, state: 'running' });
-
-	// Run a single test case in the debugger
-
-	testStatesEmitter.fire(<TestEvent>{ type: 'test', test: testCase.id, state: 'passed' });
-}
-*/

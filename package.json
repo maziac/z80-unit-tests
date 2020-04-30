@@ -7,7 +7,7 @@
   "author": {
     "name": "Thomas Busse"
   },
-  "version": "1.0.0",
+  "version": "1.0.2",
   "license": "MIT",
   "homepage": "https://github.com/maziac/z80-unit-tests",
   "repository": {
@@ -28,6 +28,7 @@
   ],
   "main": "out/main.js",
   "scripts": {
+    "preinstall": "npx npm-force-resolutions",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "clean": "rimraf out *.vsix",
     "build": "tsc",
@@ -37,14 +38,18 @@
     "publish": "vsce publish"
   },
   "dependencies": {
-    "@types/assert": "^1.4.3",
-    "tslib": "^1.10.0",
-    "vscode-test-adapter-api": "^1.7.0",
+    "@types/assert": "^1.4.6",
+    "tslib": "^1.11.1",
+    "vscode-test-adapter-api": "^1.8.0",
     "vscode-test-adapter-util": "^0.7.0"
   },
   "devDependencies": {
-    "typescript": "^3.7.4",
+    "minimist": "^1.2.5",
+    "typescript": "^3.8.3",
     "vscode": "^1.1.36"
+  },
+  "resolutions": {
+    "minimist": "^1.2.5"
   },
   "engines": {
     "vscode": "^1.35.1"

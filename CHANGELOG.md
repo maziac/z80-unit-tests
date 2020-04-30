@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2
+- Fixed 'TypeError' on 'started' event.
+
+
+## 1.0.1
+- Packages updated.
+
+
 ## 1.0.0
 - Dependencies changed from z80-debug to dezog.
 

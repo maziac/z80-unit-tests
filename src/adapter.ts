@@ -56,13 +56,7 @@ export class Z80UnitTestAdapter implements TestAdapter {
 	}
 
 	async run(tests: string[]): Promise<void> {
-
-		//this.testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started', tests });
-
 		await runTests(false, tests, this.testStatesEmitter);
-
-		//this.testStatesEmitter.fire(<TestRunFinishedEvent>{ type: 'finished' });
-
 	}
 
 	async debug(tests: string[]): Promise<void> {
