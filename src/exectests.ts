@@ -210,7 +210,6 @@ function assignFilesAndLines(testSuite: TestSuiteInfo|TestInfo, fileLinesMap: Ma
 }
 
 
-
 /**
  * Runs one or more test cases.
  * @param debug true if debugger should be started in debug mode.
@@ -220,14 +219,22 @@ function assignFilesAndLines(testSuite: TestSuiteInfo|TestInfo, fileLinesMap: Ma
 export async function runTests(
 	debug: boolean,
 	tests: string[],
-	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
+	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent|TestRunFinishedEvent|TestSuiteEvent|TestEvent>
 ): Promise<void> {
-
 	// Get all selected testcases.
-	const testCases = getTestCases(tests);
-
+	const testCases=getTestCases(tests);
 	// Runs the testcases
 	runTestCases(debug, testCases, testStatesEmitter);
+}
+
+
+/**
+ * Cancels all running test cases.
+ */
+export async function cancelTests(): Promise<void> {
+	// Tell DeZog to cancel the running unit tests.
+	vscode.commands.executeCommand('dezog.cancelUnitTests');
+	// I could sent a finish event here anyway, but it seems it is not necessary as DeZog sends the cancellation.
 }
 
 

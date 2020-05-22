@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TestAdapter, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent } from 'vscode-test-adapter-api';
 import { Log } from 'vscode-test-adapter-util';
-import { loadTests, runTests } from './exectests';
+import { loadTests, runTests, cancelTests } from './exectests';
 
 
 /**
@@ -64,10 +64,12 @@ export class Z80UnitTestAdapter implements TestAdapter {
 	}
 
 
-	cancel(): void {
+	// Called when the red square button is pressed. Can be done e.g. during debugging of a testcase.
+	async cancel(): Promise<void> {
 		// in a "real" TestAdapter this would kill the child process for the current test run (if there is any)
-		throw new Error("Method not implemented.");
+		await cancelTests();
 	}
+
 
 	dispose(): void {
 		this.cancel();
