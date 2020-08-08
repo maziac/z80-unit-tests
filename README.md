@@ -1,3 +1,12 @@
+# Support
+
+If you like the "Z80 Unit Test Adapter" please consider supporting it.
+
+<a title="PayPal" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8S4R8HPXVCXUL&source=url">
+	<img src="images/btn_donate_SM.gif" />
+</a>
+
+
 # Z80 Unit Test Adapter
 
 This is a unit test adapter for the Z80 assembler language.
@@ -5,7 +14,7 @@ It allows to run unit tests very comfortable from the vscode UI.
 
 The adapter is just a mediator, it requires other extensions
 - [DeZog (Z80 Debugger)](https://github.com/maziac/dezog)
-- [Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer) 
+- [Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer)
 
 
 ## Gallery
