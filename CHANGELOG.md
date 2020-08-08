@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.1
+- Added donate button.
+
 ## 1.1.0
 - Cancel unit tests when pressing red square button.
 
