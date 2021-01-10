@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2016",
-    "lib": [ "es2016" ],
     "module": "commonjs",
-    "outDir": "out",
-    "importHelpers": true,
-    "sourceMap": true,
-    "strict": true,
-    "noImplicitReturns": true,
+    "target": "es6",
+    "noImplicitAny": false,
+    "removeComments": false,
     "noUnusedLocals": true,
-    "removeComments": true,
+    "noImplicitThis": true,
+    "inlineSourceMap": false,
+    "sourceMap": true,
+    "outDir": "./out",
+    "preserveConstEnums": true,
+    "strictNullChecks": true,
+    "noUnusedParameters": false,
+    "allowJs": true,
+
     "skipLibCheck": true
-  },
-  "include": [
-    "src/main.ts"
-  ]
+  }
 }
-  

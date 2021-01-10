@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+- Packages updated.
+- Buttons changed.
+
 ## 1.1.1
 - Added donate button.
 
