@@ -1,11 +1,12 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { TestSuiteInfo, TestInfo, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent } from 'vscode-test-adapter-api';
+import * as path from 'path';
 
 
 
 // Z80 Debugger extension.
-const z80DebugExtensionId = "maziac.dezog";
+const dezogExtensionId = "maziac.dezog";
 
 /**
  * Enumeration for the returned test case pass or failure.
@@ -29,64 +30,44 @@ export interface UnitTestCase {
 
 
 
-/// The current testcases.
-let currentTestSuite: TestSuiteInfo|undefined;
-
-
 /**
  * Retrieves the unit tests from the dezog extension.
+ * @param rootFolder The root folder of the project.
  */
-export function loadTests(): Promise<TestSuiteInfo> {
-	return new Promise<TestSuiteInfo>((resolve, reject) => {
-		const z80Debug = vscode.extensions.getExtension(z80DebugExtensionId);
-		if(!z80Debug) {
+export async function loadTests(rootFolder: string): Promise<TestSuiteInfo> {
+	// Check for deZog
+	const dezog = vscode.extensions.getExtension(dezogExtensionId);
+	if (!dezog) {
+		// Return error
+		const txt = "'" + dezogExtensionId + "' extension not found. Please install!";
+		throw txt;
+	}
+
+	// Activate DeZog
+	if (!dezog.isActive) {
+		try {
+			await dezog.activate();
+		}
+		catch (e) {
 			// Return error
-			currentTestSuite = undefined;
-			const txt = "'" + z80DebugExtensionId + "' extension not found. Please install!";
-			return reject(txt); 
+			const txt = "'DeZog' activation failed.";
+			throw txt;
 		}
-		if(z80Debug.isActive == false) {
-			z80Debug.activate().then(
-				// Fullfilled:
-				() => {
-					getAllUnitTests().then(
-						// Resolve
-						testSuite => {
-							resolve(testSuite);
-						},
-						// Reject
-						errorText => {
-							reject(errorText);
-						});
-				},
-				// Reject:
-				() => { 
-					currentTestSuite = undefined;
-					// Return error
-					const txt = "'DeZog' activation failed.";
-					reject(txt); 
-				}
-			);
-		}
-		else {
-			getAllUnitTests().then(
-				// Resolve
-				testSuite => {
-					resolve(testSuite);
-				},
-				// Reject
-				errorText => {
-					reject(errorText);
-				});
-		}		
-	});
+	}
+
+	// Get unit tests of project
+	const testSuite = await getAllUnitTests(rootFolder);
+
+	// Return
+	return testSuite;
 }
 
 
 /**
  * Function that converts the string labels in a test suite info.
+ * @param rootFolder The root folder of the project.
  */
-function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo|undefined {
+function convertLabelsToTestSuite(rootFolder: string, lblLocations: UnitTestCase[]): TestSuiteInfo|undefined {
 	const labels = lblLocations.map(lblLoc => lblLoc.label);
 	const labelMap = new Map<string, any>();
 	for(const label of labels) {
@@ -112,7 +93,8 @@ function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo|u
 		return undefined;
 	}
 	// Convert map into suite
-	const testSuite = createTestSuite(labelMap) as TestSuiteInfo;
+	const projectName = path.basename(rootFolder);
+	const testSuite = createTestSuite(labelMap, projectName) as TestSuiteInfo;
 	// Assign files and line numbers
 	const fileLinesMap = new Map<string, {file: string, line:number}>();
 	lblLocations.map(lblLoc => {
@@ -126,41 +108,24 @@ function convertLabelsToTestSuite(lblLocations: UnitTestCase[]): TestSuiteInfo|u
 /**
  * Executes 'dezog.getAllUnitTests' in DeZog and then
  * evaluates the returned testcase labels.
+ * @param rootFolder The root folder of the project.
  * @returns A test suite or (reject) an error text.
  */
-function getAllUnitTests(): Promise<TestSuiteInfo> {
-	return new Promise <TestSuiteInfo>((resolve, reject) => {
-		vscode.commands.executeCommand('dezog.getAllUnitTests')
-		.then(
-			// Fullfilled
-			result => {
-				// Everything fine.
-				const lblLocations = result as UnitTestCase[];
-				currentTestSuite = convertLabelsToTestSuite(lblLocations);
-				return resolve(currentTestSuite);			
-			},
-			// Rejected
-			result => {
-				// Error
-				const errorText = result as string;
-				// Return empty list
-				currentTestSuite = undefined;
-				// Return error
-				return reject(errorText); 
-			}
-		);
-	});
+async function getAllUnitTests(rootFolder: string): Promise<TestSuiteInfo> {
+	const lblLocations = await vscode.commands.executeCommand('dezog.getAllUnitTests', rootFolder) as UnitTestCase[];
+	const testSuite = convertLabelsToTestSuite(rootFolder, lblLocations)!;
+	return testSuite;
 }
 
 
 /**
  * Create a testsuite object from the given map.
  * Calls itself recursively.
- * @param map A map of maps. An entry with a map of length 0 is a leaf, 
+ * @param map A map of maps. An entry with a map of length 0 is a leaf,
  * i.e. a testcase. Others are test suites.
  * @return The correspondent testsuite.
  */
-function createTestSuite(map: Map<string,any>, name = 'z80-unit-tests', id = ''): TestSuiteInfo|TestInfo {
+function createTestSuite(map: Map<string,any>, name: string, id = ''): TestSuiteInfo|TestInfo {
 	// Check if testsuite or testcase
 	if(map.size == 0) {
 		// It has no children, it is a leaf, i.e. a testcase
@@ -170,12 +135,12 @@ function createTestSuite(map: Map<string,any>, name = 'z80-unit-tests', id = '')
 			label: name
 		};
 	}
-	
+
 	// It has children, i.e. it is a test suite
 	const children: Array<TestSuiteInfo|TestInfo> = [];
 	for(const [key, childMap] of map) {
 		const totalKey = (id == '')? key : id+'.'+key;
-		const childSuite = createTestSuite(childMap, key, totalKey);			
+		const childSuite = createTestSuite(childMap, key, totalKey);
 		children.push(childSuite);
 	}
 	return {
@@ -213,19 +178,38 @@ function assignFilesAndLines(testSuite: TestSuiteInfo|TestInfo, fileLinesMap: Ma
 /**
  * Runs one or more test cases.
  * @param debug true if debugger should be started in debug mode.
- * @param node 
- * @param testStatesEmitter 
+ * @param rootFolder The root folder of the project.
+ * @param tests An array with the test case names.
+ * @param testStatesEmitter
  */
 export async function runTests(
 	debug: boolean,
+	rootFolder: string,
 	tests: string[],
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent|TestRunFinishedEvent|TestSuiteEvent|TestEvent>
 ): Promise<void> {
-	// Get all selected testcases.
-	const testCases=getTestCases(tests);
-	// Runs the testcases
-	runTestCases(debug, testCases, testStatesEmitter);
+	// The testadapter does not wait on completion, so we have to handle ourselves and put the requests in a queue
+	const f = async () => {
+		// Get all selected testcases.
+		const testCases = await getTestCases(rootFolder, tests);
+		// Runs the testcases
+		await runTestCases(debug, rootFolder, testCases, testStatesEmitter);
+	};
+	runTestsQueue.push(f);
+
+	// Return if already running
+	if (runTestsQueue.length > 1)
+		return;
+
+	// Loop through queue
+	while (runTestsQueue.length > 0) {
+		const func = runTestsQueue[0];
+		await func();
+		runTestsQueue.shift()
+	}
 }
+const runTestsQueue = new Array <() => void> ();
+
 
 
 /**
@@ -241,16 +225,20 @@ export async function cancelTests(): Promise<void> {
 /**
  * Returns all test cases that are identified by the strings in
  * 'tests' array. If a suite is mentioned all testcases from that suite are returned.
+ * @param rootFolder The root folder of the project.
  * @param tests An array with test cases or test suite names.
  * @returns An array with test cases.
  */
-function getTestCases(tests: string[]): TestInfo[] {
+async function getTestCases(rootFolder: string, tests: string[]): Promise<TestInfo[]> {
 	const testCases: TestInfo[] = [];
 
+	// Get test suite (again)
+	const testSuite = await getAllUnitTests(rootFolder);
+
 	// Loop
-	if(currentTestSuite) {
+	if (testSuite) {
 		for (const suiteOrTestId of tests) {
-			const node = findNode(currentTestSuite, suiteOrTestId);
+			const node = findNode(testSuite, suiteOrTestId);
 			assert(node);
 			if(node) {
 				const tcs = getAllFromNode(node);
@@ -265,7 +253,7 @@ function getTestCases(tests: string[]): TestInfo[] {
 
 
 /**
- * Returns all testcases that migth be included. I.e. returns all 
+ * Returns all testcases that migth be included. I.e. returns all
  * child testcases of a 'suite'.
  * If node is a 'test' it only returns the node itself.
  * @param node Either 'test' or 'suite'.
@@ -301,7 +289,7 @@ function getAllFromNode(node: TestSuiteInfo | TestInfo): TestInfo[] {
 function findNode(searchNode: TestSuiteInfo | TestInfo, id: string): TestSuiteInfo | TestInfo | undefined {
 	if (searchNode.id === id) {
 		return searchNode;
-	} 
+	}
 	else if (searchNode.type === 'suite') {
 		for (const child of searchNode.children) {
 			const found = findNode(child, id);
@@ -315,10 +303,12 @@ function findNode(searchNode: TestSuiteInfo | TestInfo, id: string): TestSuiteIn
 /**
  * Runs the testcases.
  * @param debug true if debugger should be started in debug mode.
- * @param node 
- * @param testStatesEmitter 
+ * @param rootFolder The root folder of the project.
+ * @param testCases Array of tests.
+ * @param testStatesEmitter
  */
 async function runTestCases(debug: boolean,
+ 	rootFolder: string,
 	testCases: TestInfo[],
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
 ): Promise<void> {
@@ -326,46 +316,62 @@ async function runTestCases(debug: boolean,
 	const tcLabels=testCases.map(tc => tc.id);
 	testStatesEmitter.fire(<TestRunStartedEvent>{type: 'started', tests: tcLabels});
 
-	// Tell dezog to clear current tests
-	vscode.commands.executeCommand('dezog.initUnitTests');
+	// Run all test cases
+	await runProjectTestCases(debug, rootFolder, tcLabels, testStatesEmitter);
 
-	// Loop over all testcases and emit that test case started
-	let tcCount = 0;
-	for(const tc of testCases) {
-		const tcLabel: string = tc.id;
-		testStatesEmitter.fire(<TestEvent>{ type: 'test', test: tcLabel, state: 'running' });
-		// Tell dezog what to test
-		tcCount ++;
-		vscode.commands.executeCommand('dezog.execUnitTestCase', tcLabel)
-		.then(testCaseResult => {
-			// Return the ersult
-			let tcResultStr = "errored";
-			let message;
-			switch(testCaseResult) {
-				case TestCaseResult.OK: 
-					tcResultStr = "passed";
-					break;
-				case TestCaseResult.TIMEOUT:
-					message = 'Timed out!';
-					// Flow through
-				case TestCaseResult.FAILED: 
-					tcResultStr = "failed";
-					break;
-			}
-			testStatesEmitter.fire(<TestEvent>{type: 'test', test: tcLabel, state: tcResultStr, message: message});
-			// Check if last test case run
-			tcCount --;
-			if(tcCount == 0) {
-				// Event: Stop the test cases
-				testStatesEmitter.fire(<TestRunFinishedEvent>{type: 'finished'});
-			}
-		});
-	}
+	// Event: Stop the test cases
+	testStatesEmitter.fire(<TestRunFinishedEvent>{type: 'finished'});
+}
 
-	// Start the unit tests
-	if(debug)
-		vscode.commands.executeCommand('dezog.debugPartialUnitTests');
-	else
-		vscode.commands.executeCommand('dezog.runPartialUnitTests');
+
+/**
+ * Runs all testcases for one project in case of a multiroot project.
+ */
+async function runProjectTestCases(debug: boolean,
+	rootFolder: string,
+	testCaseLabels: string[],
+	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent | TestRunFinishedEvent | TestSuiteEvent | TestEvent>
+): Promise<void> {
+	return new Promise<void>(resolve => {
+		// Tell dezog to clear current tests
+		vscode.commands.executeCommand('dezog.initUnitTests');
+		// Start all testcases
+		let tcCount = 0;
+		for (const tcLabel of testCaseLabels) {
+			testStatesEmitter.fire(<TestEvent>{type: 'test', test: tcLabel, state: 'running'});
+			// Tell dezog what to test
+			tcCount++;
+			vscode.commands.executeCommand('dezog.execUnitTestCase', tcLabel)
+				.then(testCaseResult => {
+					// Return the result
+					let tcResultStr = "errored";
+					let message;
+					switch (testCaseResult) {
+						case TestCaseResult.OK:
+							tcResultStr = "passed";
+							break;
+						case TestCaseResult.TIMEOUT:
+							message = 'Timed out!';
+						// Flow through
+						case TestCaseResult.FAILED:
+							tcResultStr = "failed";
+							break;
+					}
+					testStatesEmitter.fire(<TestEvent>{type: 'test', test: tcLabel, state: tcResultStr, message: message});
+					// Check if last test case run
+					tcCount--;
+					if (tcCount == 0) {
+						// Return after last testcase finished
+						resolve();
+					}
+				});
+		}
+
+		// Start the unit tests
+		if (debug)
+			vscode.commands.executeCommand('dezog.debugPartialUnitTests', rootFolder);
+		else
+			vscode.commands.executeCommand('dezog.runPartialUnitTests', rootFolder);
+	});
 }
 

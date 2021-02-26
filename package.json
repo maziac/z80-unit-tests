@@ -7,7 +7,7 @@
   "author": {
     "name": "Thomas Busse"
   },
-  "version": "1.1.2",
+  "version": "1.2.0",
   "license": "MIT",
   "homepage": "https://github.com/maziac/z80-unit-tests",
   "repository": {
@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@types/assert": "^1.5.2",
+    "path": "^0.12.7",
     "tslib": "^1.14.1",
     "vscode-test-adapter-api": "^1.9.0",
     "vscode-test-adapter-util": "^0.7.1"

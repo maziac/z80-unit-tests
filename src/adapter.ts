@@ -40,27 +40,30 @@ export class Z80UnitTestAdapter implements TestAdapter {
 
 		let loadedTests;
 		try {
-			loadedTests = await loadTests();
+			const rootFolder = this.workspace.uri.fsPath;
+			loadedTests = await loadTests(rootFolder);
 			if(loadedTests)
-				this.log.info('Unit tests found');
-			else 
-				this.log.info('No tests found');
+				this.log.info('Unit tests found, ' + rootFolder);
+			else
+				this.log.info('No unit tests found, ' + rootFolder);
 		}
 		catch(e) {
 			this.log.warn(e);
 		}
-		
+
 		this.testsEmitter.fire(<TestLoadFinishedEvent>{ type: 'finished', suite: loadedTests });
-		
+
 		this.log.info('Loading finished');
 	}
 
 	async run(tests: string[]): Promise<void> {
-		await runTests(false, tests, this.testStatesEmitter);
+		const rootFolder = this.workspace.uri.fsPath;
+		await runTests(false, rootFolder, tests, this.testStatesEmitter);
 	}
 
 	async debug(tests: string[]): Promise<void> {
-		await runTests(true, tests, this.testStatesEmitter);
+		const rootFolder = this.workspace.uri.fsPath;
+		await runTests(true, rootFolder, tests, this.testStatesEmitter);
 	}
 
 
