@@ -41,8 +41,8 @@
     "vscode-test-adapter-util": "^0.7.1"
   },
   "devDependencies": {
-    "typescript": "^3.9.7",
-    "@types/vscode": "^1.52.0"
+    "@types/vscode": "^1.52.0",
+    "typescript": "^3.9.7"
   },
   "engines": {
     "vscode": "^1.52.0"
