@@ -68,8 +68,9 @@ export class Z80UnitTestAdapter implements TestAdapter {
 
 
 	// Called when the red square button is pressed. Can be done e.g. during debugging of a testcase.
+	// Is called once per project.
 	async cancel(): Promise<void> {
-		// in a "real" TestAdapter this would kill the child process for the current test run (if there is any)
+		// Cancels running unit tests
 		await cancelTests();
 	}
 

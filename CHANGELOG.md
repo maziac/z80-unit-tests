@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.2.0
-- Supports new format of DeZog. Multiple workspaces.
+- Supports new command format of DeZog. Multiple workspaces.
 
 ## 1.1.2
 - Packages updated.

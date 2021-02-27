@@ -29,7 +29,6 @@ export interface UnitTestCase {
 }
 
 
-
 /**
  * Retrieves the unit tests from the dezog extension.
  * @param rootFolder The root folder of the project.
@@ -179,7 +178,8 @@ function assignFilesAndLines(testSuite: TestSuiteInfo|TestInfo, fileLinesMap: Ma
  * Runs one or more test cases.
  * @param debug true if debugger should be started in debug mode.
  * @param rootFolder The root folder of the project.
- * @param tests An array with the test case names.
+ * @param tests An array with the test case names. If only one is selected it is the tetcase itself or
+ * the selected testsuite. But it is also possible to select certain testcase. Then it is an array with more than 1 entry.
  * @param testStatesEmitter
  */
 export async function runTests(
@@ -188,6 +188,7 @@ export async function runTests(
 	tests: string[],
 	testStatesEmitter: vscode.EventEmitter<TestRunStartedEvent|TestRunFinishedEvent|TestSuiteEvent|TestEvent>
 ): Promise<void> {
+
 	// The testadapter does not wait on completion, so we have to handle ourselves and put the requests in a queue
 	const f = async () => {
 		// Get all selected testcases.
@@ -214,11 +215,21 @@ const runTestsQueue = new Array <() => void> ();
 
 /**
  * Cancels all running test cases.
+ * Note: This is called once per project in a multiroot project.
+ * So correct implementation would be to check the runTestsQueue (the queue would be required to be extended to also contain the rootFolder).
+ * All entries with the rootFolder would be removed from the queue.
+ * If it would be the first entry then dezog would be informed to cancel the test.
+ * Drawback is that this would come in the wrong order already the next queued testcases would have started.
+ * So a simplified approach was chosen: any project 'cancel' cancels everything.
+ * There is anyhow only one button for all.
  */
 export async function cancelTests(): Promise<void> {
 	// Tell DeZog to cancel the running unit tests.
-	vscode.commands.executeCommand('dezog.cancelUnitTests');
-	// I could sent a finish event here anyway, but it seems it is not necessary as DeZog sends the cancellation.
+	if (runTestsQueue.length > 0) {
+		runTestsQueue.length = 0;
+		// Do only once
+		await vscode.commands.executeCommand('dezog.cancelUnitTests');
+	}
 }
 
 
