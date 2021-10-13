@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.0
+- Z80-Unit-Tests extension deactivated. Functionality is now integrated into DeZog.
+
 ## 1.2.0
 - Supports new command format of DeZog. Multiple workspaces.
 
